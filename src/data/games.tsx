@@ -1,4 +1,5 @@
 import { Game } from '../types/Game';
+import { premiumGames } from './premiumGames';
 
 export const gameData: Game[] = [
   // Casual Games (Low Complexity)
@@ -200,5 +201,8 @@ export const gameData: Game[] = [
     tags: ['time-travel', 'fashion', 'history'],
     estimatedPlayTime: '25-45 min',
     difficulty: 4
-  }
+  },
+
+  // Premium Games
+  ...premiumGames
 ];

@@ -1,23 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Clock, Target, Edit as Reddit, Crown } from 'lucide-react';
+import { Trophy, Star, Clock, Target, Edit as Reddit, Crown, Settings } from 'lucide-react';
+import { useRevenueCat } from '../hooks/useRevenueCat';
+import PremiumModal from './PremiumModal';
+import PremiumBadge from './PremiumBadge';
 
 const UserProfile: React.FC = () => {
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  
+  // In a real app, you'd get this from environment variables
+  const REVENUECAT_API_KEY = 'your_revenuecat_public_api_key_here';
+  
+  const {
+    premiumFeatures,
+    subscriptionPlans,
+    isLoading,
+    error,
+    purchasePackage,
+    restorePurchases
+  } = useRevenueCat(REVENUECAT_API_KEY, 'ArcadeGamer42');
+
   const userStats = {
     level: 12,
     totalScore: 45380,
-    gamesPlayed: 8,
-    achievements: 15,
+    gamesPlayed: premiumFeatures.isPremium ? 13 : 8,
+    achievements: premiumFeatures.isPremium ? 22 : 15,
     timePlayedHours: 23,
     favoriteGame: 'Chicken Nugget Chaos',
     redditKarma: 1247,
-    isPremium: false
   };
 
   const recentAchievements = [
     { id: 1, name: 'Nugget Master', description: 'Collected 1000 nuggets', icon: '🍗', earned: '2 days ago' },
     { id: 2, name: 'Bubble Buster', description: 'Popped 500 bubbles', icon: '🫧', earned: '1 week ago' },
     { id: 3, name: 'Speed Demon', description: 'Won a snail race in under 5 minutes', icon: '🐌', earned: '2 weeks ago' },
+    ...(premiumFeatures.isPremium ? [
+      { id: 4, name: 'Quantum Explorer', description: 'Completed Quantum Cat Simulator', icon: '🐱', earned: '3 days ago', premium: true },
+      { id: 5, name: 'Pizza Master', description: 'Delivered 100 interdimensional pizzas', icon: '🍕', earned: '1 week ago', premium: true },
+    ] : [])
   ];
 
   return (
@@ -33,13 +53,17 @@ const UserProfile: React.FC = () => {
             <div className="w-24 h-24 bg-gradient-to-r from-neon-pink to-neon-cyan rounded-full flex items-center justify-center text-4xl font-bold text-white">
               AG
             </div>
-            {userStats.isPremium && (
-              <Crown className="absolute -top-2 -right-2 w-8 h-8 text-neon-yellow" />
+            {premiumFeatures.isPremium && (
+              <Crown className="absolute -top-2 -right-2 w-8 h-8 text-neon-yellow animate-pulse" />
             )}
           </div>
           
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-3xl font-bold text-white font-arcade mb-2">ArcadeGamer42</h1>
+            <div className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+              <h1 className="text-3xl font-bold text-white font-arcade">ArcadeGamer42</h1>
+              <PremiumBadge isPremium={premiumFeatures.isPremium} size="sm" />
+            </div>
+            
             <div className="flex items-center justify-center md:justify-start space-x-2 mb-4">
               <Reddit className="w-5 h-5 text-orange-500" />
               <span className="text-orange-400">u/ArcadeGamer42</span>
@@ -69,14 +93,56 @@ const UserProfile: React.FC = () => {
             </div>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-neon-orange to-neon-pink text-white font-bold py-3 px-6 rounded-lg"
-          >
-            Upgrade to Premium
-          </motion.button>
+          {!premiumFeatures.isPremium && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowPremiumModal(true)}
+              className="bg-gradient-to-r from-neon-orange to-neon-pink text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg hover:shadow-neon-pink/25 transition-all"
+            >
+              <div className="flex items-center space-x-2">
+                <Crown className="w-5 h-5" />
+                <span>Upgrade to Premium</span>
+              </div>
+            </motion.button>
+          )}
         </div>
+
+        {/* Premium Features Status */}
+        {premiumFeatures.isPremium && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-r from-neon-yellow/20 to-neon-orange/20 border border-neon-yellow/30 rounded-lg p-4 mb-8"
+          >
+            <h3 className="text-lg font-bold text-neon-yellow mb-2 font-arcade flex items-center space-x-2">
+              <Crown className="w-5 h-5" />
+              <span>PREMIUM ACTIVE</span>
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div className="flex items-center space-x-2">
+                <span className={premiumFeatures.hasAdFree ? 'text-neon-green' : 'text-gray-400'}>
+                  {premiumFeatures.hasAdFree ? '✓' : '✗'} Ad-Free
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className={premiumFeatures.hasExclusiveGames ? 'text-neon-green' : 'text-gray-400'}>
+                  {premiumFeatures.hasExclusiveGames ? '✓' : '✗'} Exclusive Games
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className={premiumFeatures.hasUnlimitedLives ? 'text-neon-green' : 'text-gray-400'}>
+                  {premiumFeatures.hasUnlimitedLives ? '✓' : '✗'} Unlimited Lives
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className={premiumFeatures.hasCustomThemes ? 'text-neon-green' : 'text-gray-400'}>
+                  {premiumFeatures.hasCustomThemes ? '✓' : '✗'} Custom Themes
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -136,11 +202,18 @@ const UserProfile: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 + index * 0.1 }}
-              className="flex items-center space-x-4 bg-black/30 rounded-lg p-4"
+              className={`flex items-center space-x-4 rounded-lg p-4 ${
+                achievement.premium 
+                  ? 'bg-gradient-to-r from-neon-yellow/20 to-neon-orange/20 border border-neon-yellow/30' 
+                  : 'bg-black/30'
+              }`}
             >
               <div className="text-3xl">{achievement.icon}</div>
               <div className="flex-1">
-                <h3 className="font-bold text-white">{achievement.name}</h3>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-bold text-white">{achievement.name}</h3>
+                  {achievement.premium && <PremiumBadge isPremium={true} size="sm" showText={false} />}
+                </div>
                 <p className="text-gray-300 text-sm">{achievement.description}</p>
               </div>
               <div className="text-gray-400 text-sm">{achievement.earned}</div>
@@ -184,6 +257,16 @@ const UserProfile: React.FC = () => {
           <Reddit className="w-16 h-16 text-orange-500" />
         </div>
       </motion.div>
+
+      {/* Premium Modal */}
+      <PremiumModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        subscriptionPlans={subscriptionPlans}
+        onPurchase={purchasePackage}
+        onRestore={restorePurchases}
+        isLoading={isLoading}
+      />
     </div>
   );
 };
